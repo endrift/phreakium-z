@@ -41,35 +41,8 @@ SECTION "boot",HOME[$100]
 
 SECTION "main", HOME[$150]
 _start:
-	ld a, $80
+	xor a
 	ldio [rNR52], a
-	ld a, $ff
-	ldio [rNR50], a
-	ld a, $44
-	ldio [rNR51], a
-	ld a, $20
-	ldio [rNR32], a
-
-	ld a, $fc
-	ldio [rWave_0], a
-	ldio [rWave_4], a
-	ldio [rWave_8], a
-	ldio [rWave_c], a
-	ld a, $84
-	ldio [rWave_1], a
-	ldio [rWave_5], a
-	ldio [rWave_9], a
-	ldio [rWave_d], a
-	ld a, $04
-	ldio [rWave_2], a
-	ldio [rWave_6], a
-	ldio [rWave_e], a
-	ldio [rWave_a], a
-	ld a, $8c
-	ldio [rWave_3], a
-	ldio [rWave_7], a
-	ldio [rWave_b], a
-	ldio [rWave_f], a
 
 	ld a, $80
 	ldio [rLCDC], a
@@ -129,6 +102,36 @@ wait_sec:
 	ret
 
 play_table:
+	ld a, $80
+	ldio [rNR52], a
+	ld a, $ff
+	ldio [rNR50], a
+	ld a, $44
+	ldio [rNR51], a
+	ld a, $20
+	ldio [rNR32], a
+
+	ld a, $fc
+	ldio [rWave_0], a
+	ldio [rWave_4], a
+	ldio [rWave_8], a
+	ldio [rWave_c], a
+	ld a, $84
+	ldio [rWave_1], a
+	ldio [rWave_5], a
+	ldio [rWave_9], a
+	ldio [rWave_d], a
+	ld a, $04
+	ldio [rWave_2], a
+	ldio [rWave_6], a
+	ldio [rWave_e], a
+	ldio [rWave_a], a
+	ld a, $8c
+	ldio [rWave_3], a
+	ldio [rWave_7], a
+	ldio [rWave_b], a
+	ldio [rWave_f], a
+
 	di
 	ld a, $80
 	ldio [rNR30], a
@@ -149,6 +152,7 @@ play_table:
 	or a
 	jr nz, .play_loop
 	xor a
+	ldio [rNR52], a
 	ldio [rTAC], a
 	ld a, $01
 	ldio [rIE], a
@@ -295,4 +299,3 @@ active_slot:
 	ds 1
 down_buttons:
 	ds 1
-
