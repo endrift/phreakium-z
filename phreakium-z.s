@@ -2,30 +2,13 @@ rJOYP       EQU $ff00
 rTIMA       EQU $ff05
 rTMA        EQU $ff06
 rTAC        EQU $ff07
-rNR30       EQU $ff1a
-rNR31       EQU $ff1b
-rNR32       EQU $ff1c
-rNR33       EQU $ff1d
-rNR34       EQU $ff1e
+rNR21       EQU $ff16
+rNR22       EQU $ff17
+rNR23       EQU $ff18
+rNR24       EQU $ff19
 rNR50       EQU $ff24
 rNR51       EQU $ff25
 rNR52       EQU $ff26
-rWave_0     EQU $ff30
-rWave_1     EQU $ff31
-rWave_2     EQU $ff32
-rWave_3     EQU $ff33
-rWave_4     EQU $ff34
-rWave_5     EQU $ff35
-rWave_6     EQU $ff36
-rWave_7     EQU $ff37
-rWave_8     EQU $ff38
-rWave_9     EQU $ff39
-rWave_a     EQU $ff3a
-rWave_b     EQU $ff3b
-rWave_c     EQU $ff3c
-rWave_d     EQU $ff3d
-rWave_e     EQU $ff3e
-rWave_f     EQU $ff3f
 rLCDC       EQU $ff40
 rSTAT       EQU $ff41
 rSCY        EQU $ff42
@@ -61,7 +44,10 @@ sq_2      EQU $10
 sq_3      EQU $11
 
 disp_y    EQU $50
-disp_x    EQU $2c
+disp_x    EQU $24
+
+F  EQUS " + $e5"
+K  EQU  $e3
 
 SECTION "vblank",HOME[$40]
 	jp vblank
@@ -80,14 +66,10 @@ _start:
 	ld hl, active_slot
 	ld [hl], $0
 
-	ld hl, ramtable
-	ld bc, firez
-.copy_table:
-	ld a, [bc]
-	inc bc
-	ld [hl+], a
-	or a
-	jr nz, .copy_table
+	ld hl, firez
+	ld bc, ramtable
+	ld de, 8
+	call copy
 
 	xor a
 	ldio [rLCDC], a
@@ -195,37 +177,15 @@ wait_sec:
 play_table:
 	ld a, $80
 	ldio [rNR52], a
+	ldio [rNR21], a
 	ld a, $ff
 	ldio [rNR50], a
-	ld a, $44
+	ld a, $22
 	ldio [rNR51], a
-	ld a, $20
-	ldio [rNR32], a
-
-	ld a, $fc
-	ldio [rWave_0], a
-	ldio [rWave_4], a
-	ldio [rWave_8], a
-	ldio [rWave_c], a
-	ld a, $84
-	ldio [rWave_1], a
-	ldio [rWave_5], a
-	ldio [rWave_9], a
-	ldio [rWave_d], a
-	ld a, $04
-	ldio [rWave_2], a
-	ldio [rWave_6], a
-	ldio [rWave_e], a
-	ldio [rWave_a], a
-	ld a, $8c
-	ldio [rWave_3], a
-	ldio [rWave_7], a
-	ldio [rWave_b], a
-	ldio [rWave_f], a
+	ld a, $f0
+	ldio [rNR22], a
 
 	di
-	ld a, $80
-	ldio [rNR30], a
 	xor a
 	ldio [rTIMA], a
 	ld a, $52
@@ -238,9 +198,8 @@ play_table:
 .play_loop:
 	halt
 	nop
-	ldio a, [rNR30]
-	and a, $80
-	or a
+	ldio a, [rNR51]
+	and a, $22
 	jr nz, .play_loop
 	xor a
 	ldio [rNR52], a
@@ -253,24 +212,24 @@ next_table:
 	ld a, [hl+]
 	or a
 	jr z, .end_table
-	ldio [rNR33], a
+	ldio [rNR23], a
 	ld a, $a0
 	ldio [rTMA], a
-	xor a
-	ldio [rNR30], a
+	ldio a, [rNR51]
+	and a, $dd
+	ldio [rNR51], a
 	nop
-	nop
-	nop
-	ld a, $80
-	ldio [rNR30], a
+	or a, $22
+	ldio [rNR51], a
 	ld a, $87
-	ldio [rNR34], a
+	ldio [rNR24], a
 	reti
 
 .end_table:
 	dec hl
-	xor a
-	ldio [rNR30], a
+	ldio a, [rNR51]
+	and a, $dd
+	ldio [rNR51], a
 	reti
 
 vblank:
@@ -293,41 +252,13 @@ vblank:
 	bit 7, b
 	call nz, cursor_decrease
 
-	ld bc, ramtable
-	ld a, [bc]
-	inc bc
-	add sp, -$2
-	ld hl, sp 0
-	call write_hex
-	pop de
 	ld hl, oam + end_header_oam - header_oam
-
-	ld [hl], disp_y + $10
-	inc hl
-	ld [hl], disp_x
-	inc hl
-	ld a, e
-	ld [hl+], a
-	ld [hl], 0
-	inc hl
-
-	ld [hl], disp_y + $10
-	inc hl
-	ld [hl], disp_x + 8
-	inc hl
-	ld a, d
-	ld [hl+], a
-	ld [hl], 0
-	inc hl
 
 	ld a, [active_slot]
 	add a, a
 	add a, a
 	add a, a
-	ld d, a
-	add a, a
-	add a, d
-	add a, disp_x + $1c
+	add a, disp_x + $20
 
 	ld [hl], disp_y + $18
 	inc hl
@@ -349,23 +280,27 @@ vblank:
 
 	call oam_dma
 
+	ld bc, ramtable
 	ld hl, table_text
 	ld a, [bc]
 	inc bc
-	call write_hex
-	xor a
+	ld a, $21
 	ld [hl+], a
+REPT 6
 	ld a, [bc]
 	inc bc
-	call write_hex
-	xor a
+	or a
+	jr z, .none_\@
+	sub a, $b5
+	jr .write_\@
+.none_\@:
+	ld a, $2d
+.write_\@:
 	ld [hl+], a
-	ld a, [bc]
-	inc bc
-	call write_hex
+ENDR
 	ld hl, table_text
 	ld bc, tilemap + disp_y * 4 + disp_x / 8 + 3
-	ld de, $8
+	ld de, $7
 	call copy
 
 .reti:
@@ -373,28 +308,6 @@ vblank:
 	pop bc
 	pop hl
 	reti
-
-write_hex:
-	push bc
-	ld b, a
-	swap a
-	and a, $f
-	or a, $30
-	cp a, $3a
-	jr c, .a
-	add a, $7
-.a:
-	ld [hl+], a
-	ld a, b
-	and a, $f
-	or a, $30
-	cp a, $3a
-	jr c, .b
-	add a, $7
-.b:
-	ld [hl+], a
-	pop bc
-	ret
 
 read_buttons:
 	ld a, $20
@@ -428,7 +341,7 @@ cursor_left:
 
 cursor_right:
 	ld a, [active_slot]
-	cp a, $2
+	cp a, $5
 	ret z
 	inc a
 	ld [active_slot], a
@@ -443,11 +356,19 @@ cursor_increase:
 	ld c, a
 	add hl, bc
 	ld a, [hl]
+	cp a, 3F
+	jr z, .ret
+	or a
+	jr z, .set
 	inc a
 	ld [hl], a
+.ret
 	pop bc
 	pop hl
 	ret
+.set
+	ld [hl], 0F
+	jr .ret
 
 cursor_decrease:
 	push hl
@@ -458,29 +379,27 @@ cursor_decrease:
 	ld c, a
 	add hl, bc
 	ld a, [hl]
+	cp a, 0F
+	jr z, .clear
+	or a
+	jr z, .ret
 	dec a
 	ld [hl], a
+.ret
 	pop bc
 	pop hl
 	ret
+.clear
+	ld [hl], 0
+	jr .ret
 
 table:
-	dw waterium
-	db $10
 	dw firez
 	db $0d
 	dw 0
-	db $10
-	dw 0
 
 firez:
-	db $c6, $ca, $d0, $ce, 0
-
-waterium:
-	db $c6, $ce, $d0, $c9, 0
-
-psychium:
-	db $c6, $ce, $d1, $cb, 0
+	db K, 0F, 3F, 2F, 0, 0, 0, 0
 
 header:
 REPT ($14 - strlen("{name}")) / 2
@@ -542,7 +461,7 @@ SECTION "ram",BSS
 oam:
 	ds $a0
 ramtable:
-	ds 5
+	ds 8
 active_slot:
 	ds 1
 down_buttons:
