@@ -46,6 +46,15 @@ sq_3      EQU $11
 disp_y    EQU $50
 disp_x    EQU $24
 
+zpower_duration  EQU $0d
+
+fixstr: MACRO
+	db \1
+REPT \2 - strlen(\1)
+	db 0
+ENDR
+ENDM
+
 F  EQUS " + $e5"
 K  EQU  $e3
 
@@ -66,10 +75,12 @@ _start:
 	ld hl, active_slot
 	ld [hl], $0
 
-	ld hl, firez
+	ld hl, patterns
 	ld bc, ramtable
 	ld de, 8
 	call copy
+	ld hl, ramtable
+	ld [hl], K
 
 	xor a
 	ldio [rLCDC], a
@@ -393,14 +404,6 @@ cursor_decrease:
 	ld [hl], 0
 	jr .ret
 
-table:
-	dw firez
-	db $0d
-	dw 0
-
-firez:
-	db K, 0F, 3F, 2F, 0, 0, 0, 0
-
 header:
 REPT ($14 - strlen("{name}")) / 2
 	db sq_1
@@ -474,6 +477,155 @@ symbols:
 INCBIN "symbols.bin"
 font:
 INCBIN "font.bin"
+
+zpower: MACRO
+	fixstr \1, $12
+	fixstr "(Surround)", $11
+	db zpower_duration
+ENDM
+zmove: MACRO
+	fixstr \1, $12
+	fixstr "(Z-Move)", $11
+	db \2
+ENDM
+zunkn: MACRO
+	fixstr \1, $12
+	fixstr "(Unknown)", $11
+	db \2
+ENDM
+
+SECTION "move_table",HOME
+table:
+	zpower "Normalium-Z"
+	zpower "Firium-Z"
+	zpower "Waterium-Z"
+	zpower "Grassium-Z"
+	zpower "Electrium-Z"
+	zpower "Icium-Z"
+	zpower "Fightium-Z"
+	zpower "Poisonium-Z"
+	zpower "Groundium-Z"
+	zpower "Flyium-Z"
+	zpower "Psycium-Z"
+	zpower "Bugium-Z"
+	zpower "Rockium-Z"
+	zpower "Ghostium-Z"
+	zpower "Dragonium-Z"
+	zpower "Darkium-Z"
+	zpower "Steelium-Z"
+	zpower "Fairium-Z"
+	zmove "Normalium-Z", $00
+	zmove "Firium-Z", $00
+	zmove "Waterium-Z", $00
+	zmove "Grassium-Z", $00
+	zmove "Electrium-Z", $00
+	zmove "Icium-Z", $00
+	zmove "Fightium-Z", $00
+	zmove "Poisonium-Z", $00
+	zmove "Groundium-Z", $00
+	zmove "Flyium-Z", $00
+	zmove "Psycium-Z", $00
+	zmove "Bugium-Z", $00
+	zmove "Rockium-Z", $00
+	zmove "Ghostium-Z", $00
+	zmove "Dragonium-Z", $00
+	zmove "Darkium-Z", $00
+	zmove "Steelium-Z", $00
+	zmove "Fairium-Z", $00
+	zmove "Decidium-Z", $00
+	zmove "Incinium-Z", $00
+	zmove "Primarium-Z", $00
+	zmove "PikachuniumZ", $00
+	zmove "Tapunium-Z", $00
+	zmove "AloraichiumZ", $00
+	zmove "Snorlium-Z", $00
+	zmove "Eevium-Z", $00
+	zmove "Mewium-Z", $00
+	zmove "Marshadium-Z", $00
+	zunkn "2-1-0-1-2-1", $00
+	zunkn "0-1-0-1-2-1", $00
+	zmove "PikashuniumZ", $00
+	zunkn "0-3-2-3-0-1", $00
+	zunkn "2-1-2-3-0-1", $00
+	zunkn "0-1-2-3-0-1", $00
+	zunkn "2-3-0-3-0-1", $00
+	zunkn "0-3-0-3-0-1", $00
+	zunkn "2-1-0-3-0-1", $00
+	zunkn "0-1-0-3-0-1", $00
+	zunkn "2-3-2-1-0-1", $00
+	zunkn "Pikachu 1", $00
+	zunkn "Pikachu 2", $00
+	zunkn "Pikachu 3", $00
+	zunkn "Pikachu 4", $00
+	zunkn "Pikachu 5", $00
+	zunkn "2-1-0-1-0-1", $00
+	zunkn "0-1-0-1-0-1", $00
+
+patterns:
+	db K, 2F, 3F, 2F, 3F, 2F, 3F, 0
+	db K, 0F, 3F, 2F, 3F, 2F, 3F, 0
+	db K, 2F, 1F, 2F, 3F, 2F, 3F, 0
+	db K, 0F, 1F, 2F, 3F, 2F, 3F, 0
+	db K, 2F, 3F, 0F, 3F, 2F, 3F, 0
+	db K, 0F, 3F, 0F, 3F, 2F, 3F, 0
+	db K, 2F, 1F, 0F, 3F, 2F, 3F, 0
+	db K, 0F, 1F, 0F, 3F, 2F, 3F, 0
+	db K, 2F, 3F, 2F, 1F, 2F, 3F, 0
+	db K, 0F, 3F, 2F, 1F, 2F, 3F, 0
+	db K, 2F, 1F, 2F, 1F, 2F, 3F, 0
+	db K, 0F, 1F, 2F, 1F, 2F, 3F, 0
+	db K, 2F, 3F, 0F, 1F, 2F, 3F, 0
+	db K, 0F, 3F, 0F, 1F, 2F, 3F, 0
+	db K, 2F, 1F, 0F, 1F, 2F, 3F, 0
+	db K, 0F, 1F, 0F, 1F, 2F, 3F, 0
+	db K, 2F, 3F, 2F, 3F, 0F, 3F, 0
+	db K, 0F, 3F, 2F, 3F, 0F, 3F, 0
+	db K, 2F, 1F, 2F, 3F, 0F, 3F, 0
+	db K, 0F, 1F, 2F, 3F, 0F, 3F, 0
+	db K, 2F, 3F, 0F, 3F, 0F, 3F, 0
+	db K, 0F, 3F, 0F, 3F, 0F, 3F, 0
+	db K, 2F, 1F, 0F, 3F, 0F, 3F, 0
+	db K, 0F, 1F, 0F, 3F, 0F, 3F, 0
+	db K, 2F, 3F, 2F, 1F, 0F, 3F, 0
+	db K, 0F, 3F, 2F, 1F, 0F, 3F, 0
+	db K, 2F, 1F, 2F, 1F, 0F, 3F, 0
+	db K, 0F, 1F, 2F, 1F, 0F, 3F, 0
+	db K, 2F, 3F, 0F, 1F, 0F, 3F, 0
+	db K, 0F, 3F, 0F, 1F, 0F, 3F, 0
+	db K, 2F, 1F, 0F, 1F, 0F, 3F, 0
+	db K, 0F, 1F, 0F, 1F, 0F, 3F, 0
+	db K, 2F, 3F, 2F, 3F, 2F, 1F, 0
+	db K, 0F, 3F, 2F, 3F, 2F, 1F, 0
+	db K, 2F, 1F, 2F, 3F, 2F, 1F, 0
+	db K, 0F, 1F, 2F, 3F, 2F, 1F, 0
+	db K, 2F, 3F, 0F, 3F, 2F, 1F, 0
+	db K, 0F, 3F, 0F, 3F, 2F, 1F, 0
+	db K, 2F, 1F, 0F, 3F, 2F, 1F, 0
+	db K, 0F, 1F, 0F, 3F, 2F, 1F, 0
+	db K, 2F, 3F, 2F, 1F, 2F, 1F, 0
+	db K, 0F, 3F, 2F, 1F, 2F, 1F, 0
+	db K, 2F, 1F, 2F, 1F, 2F, 1F, 0
+	db K, 0F, 1F, 2F, 1F, 2F, 1F, 0
+	db K, 2F, 3F, 0F, 1F, 2F, 1F, 0
+	db K, 0F, 3F, 0F, 1F, 2F, 1F, 0
+	db K, 2F, 1F, 0F, 1F, 2F, 1F, 0
+	db K, 0F, 1F, 0F, 1F, 2F, 1F, 0
+	db K, 2F, 3F, 2F, 3F, 0F, 1F, 0
+	db K, 0F, 3F, 2F, 3F, 0F, 1F, 0
+	db K, 2F, 1F, 2F, 3F, 0F, 1F, 0
+	db K, 0F, 1F, 2F, 3F, 0F, 1F, 0
+	db K, 2F, 3F, 0F, 3F, 0F, 1F, 0
+	db K, 0F, 3F, 0F, 3F, 0F, 1F, 0
+	db K, 2F, 1F, 0F, 3F, 0F, 1F, 0
+	db K, 0F, 1F, 0F, 3F, 0F, 1F, 0
+	db K, 2F, 3F, 2F, 1F, 0F, 1F, 0
+	db K, 0F, 3F, 2F, 1F, 0F, 1F, 0
+	db K, 2F, 1F, 2F, 1F, 0F, 1F, 0
+	db K, 0F, 1F, 2F, 1F, 0F, 1F, 0
+	db K, 2F, 3F, 0F, 1F, 0F, 1F, 0
+	db K, 0F, 3F, 0F, 1F, 0F, 1F, 0
+	db K, 2F, 1F, 0F, 1F, 0F, 1F, 0
+	db K, 0F, 1F, 0F, 1F, 0F, 1F, 0
 
 SECTION "tiles",VRAM[$8000]
 tiles:
