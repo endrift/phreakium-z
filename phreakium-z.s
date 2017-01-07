@@ -43,8 +43,10 @@ sq_1      EQU $0f
 sq_2      EQU $10
 sq_3      EQU $11
 
-disp_y    EQU $50
+disp_y    EQU $60
 disp_x    EQU $24
+
+preset_y  EQU $30
 
 zpower_duration  EQU $0d
 
@@ -71,9 +73,9 @@ SECTION "main", HOME[$150]
 _start:
 	xor a
 	ldio [rNR52], a
-
-	ld hl, active_slot
-	ld [hl], $0
+	ld [active_slot], a
+	ld [active_preset], a
+	ld [mode], a
 
 	ld hl, patterns
 	ld bc, ramtable
@@ -139,13 +141,20 @@ runloop:
 	jr runloop
 
 copy:
+	push hl
+	push bc
+	push de
+.loop
 	ld a, [hl+]
 	ld [bc], a
 	inc bc
 	dec de
 	ld a, d
 	or a, e
-	jr nz, copy
+	jr nz, .loop
+	pop de
+	pop bc
+	pop hl
 	ret
 
 zero:
@@ -244,24 +253,104 @@ next_table:
 	reti
 
 vblank:
-	push hl
+	push af
 	push bc
 	push de
+	push hl
 	call read_buttons
 	ld b, a
 	ld a, [down_buttons]
 	and a, b
 	ld a, b
 	ld [down_buttons], a
-	jp nz, .reti
+	jr nz, .reti
+	bit 2, b
+	call nz, switch_mode
+	ld a, [mode]
+	or a
+	jr nz, .call_custom_mode
+	call preset_mode
+	jr .copy_ram
+.call_custom_mode
+	call custom_mode
+.copy_ram
+	ld bc, ramtable
+	ld hl, table_text
+	ld a, [bc]
+	inc bc
+	ld a, $21
+	ld [hl+], a
+REPT 6
+	ld a, [bc]
+	inc bc
+	or a
+	jr z, .none_\@
+	sub a, $b5
+	jr .write_\@
+.none_\@:
+	ld a, $2d
+.write_\@:
+	ld [hl+], a
+ENDR
+	ld hl, table_text
+	ld bc, tilemap + disp_y * 4 + disp_x / 8 + 3
+	ld de, $7
+	call copy
+.reti:
+	pop hl
+	pop de
+	pop bc
+	pop af
+	reti
+
+preset_mode:
+	push hl
+	push bc
 	bit 4, b
-	call nz, cursor_right
+	call nz, preset_cursor_right
 	bit 5, b
-	call nz, cursor_left
+	call nz, preset_cursor_left
+
+	ld a, [active_preset]
+	call set_preset_name
+
+	ld hl, oam + end_header_oam - header_oam
+
+	ld [hl], preset_y + $10
+	inc hl
+	ld [hl], $7c
+	inc hl
+	ld [hl], arrow_l
+	inc hl
+	ld [hl], 0
+	inc hl
+
+	ld [hl], preset_y + $10
+	inc hl
+	ld [hl], $8c
+	inc hl
+	ld [hl], arrow_r
+	inc hl
+	ld [hl], 0
+	inc hl
+
+	call oam_dma
+
+	pop bc
+	pop hl
+	ret
+
+custom_mode:
+	push hl
+	push bc
+	bit 4, b
+	call nz, custom_cursor_right
+	bit 5, b
+	call nz, custom_cursor_left
 	bit 6, b
-	call nz, cursor_increase
+	call nz, custom_cursor_increase
 	bit 7, b
-	call nz, cursor_decrease
+	call nz, custom_cursor_decrease
 
 	ld hl, oam + end_header_oam - header_oam
 
@@ -291,34 +380,48 @@ vblank:
 
 	call oam_dma
 
-	ld bc, ramtable
-	ld hl, table_text
-	ld a, [bc]
-	inc bc
-	ld a, $21
-	ld [hl+], a
-REPT 6
-	ld a, [bc]
-	inc bc
-	or a
-	jr z, .none_\@
-	sub a, $b5
-	jr .write_\@
-.none_\@:
-	ld a, $2d
-.write_\@:
-	ld [hl+], a
-ENDR
-	ld hl, table_text
-	ld bc, tilemap + disp_y * 4 + disp_x / 8 + 3
-	ld de, $7
-	call copy
-
-.reti:
-	pop de
 	pop bc
 	pop hl
-	reti
+	ret
+
+switch_mode:
+	ld a, [mode]
+	xor a, $1
+	ld [mode], a
+	jr z, .load_preset_name
+	ld a, $40
+	jp set_preset_name
+.load_preset_name
+	jp load_preset
+
+set_preset_name:
+	push hl
+	push bc
+	ld h, 0
+	ld l, a
+	add hl, hl
+	add hl, hl
+	push hl
+	add hl, hl
+	add hl, hl
+	add hl, hl
+	pop bc
+	add hl, bc
+	ld bc, table
+
+	add hl, bc
+	ld bc, tilemap + (preset_y - 8) * $4 + 1
+	ld de, $12
+	call copy
+
+	add hl, de
+	ld bc, tilemap + preset_y * $4 + 1
+	ld de, $11
+	call copy
+
+	pop bc
+	pop hl
+	ret
 
 read_buttons:
 	ld a, $20
@@ -342,7 +445,7 @@ read_buttons:
 	or a, b
 	ret
 
-cursor_left:
+custom_cursor_left:
 	ld a, [active_slot]
 	and a
 	ret z
@@ -350,7 +453,7 @@ cursor_left:
 	ld [active_slot], a
 	ret
 
-cursor_right:
+custom_cursor_right:
 	ld a, [active_slot]
 	cp a, $5
 	ret z
@@ -358,7 +461,7 @@ cursor_right:
 	ld [active_slot], a
 	ret
 
-cursor_increase:
+custom_cursor_increase:
 	push hl
 	push bc
 	ld hl, ramtable+1
@@ -381,7 +484,7 @@ cursor_increase:
 	ld [hl], 0F
 	jr .ret
 
-cursor_decrease:
+custom_cursor_decrease:
 	push hl
 	push bc
 	ld hl, ramtable+1
@@ -403,6 +506,41 @@ cursor_decrease:
 .clear
 	ld [hl], 0
 	jr .ret
+
+preset_cursor_right:
+	ld a, [active_preset]
+	inc a
+	and a, $3f
+	ld [active_preset], a
+	jp load_preset
+
+preset_cursor_left:
+	ld a, [active_preset]
+	dec a
+	and a, $3f
+	ld [active_preset], a
+	jp load_preset
+
+load_preset:
+	push hl
+	push bc
+	push de
+	ld a, [active_preset]
+	ld l, a
+	call set_preset_name
+	ld h, 0
+	add hl, hl
+	add hl, hl
+	add hl, hl
+	ld bc, patterns
+	add hl, bc
+	ld bc, ramtable
+	ld de, $8
+	call copy
+	pop de
+	pop bc
+	pop hl
+	ret
 
 header:
 REPT ($14 - strlen("{name}")) / 2
@@ -471,6 +609,10 @@ down_buttons:
 	ds 1
 table_text:
 	ds 8
+mode:
+	ds 1
+active_preset:
+	ds 1
 
 SECTION "tilerom",HOME
 symbols:
@@ -480,7 +622,7 @@ INCBIN "font.bin"
 
 zpower: MACRO
 	fixstr \1, $12
-	fixstr "(Surround)", $11
+	fixstr "(Surrounded)", $11
 	db zpower_duration
 ENDM
 zmove: MACRO
@@ -535,16 +677,16 @@ table:
 	zmove "Decidium-Z", $00
 	zmove "Incinium-Z", $00
 	zmove "Primarium-Z", $00
-	zmove "PikachuniumZ", $00
+	zmove "Pikachunium-Z", $00
 	zmove "Tapunium-Z", $00
-	zmove "AloraichiumZ", $00
+	zmove "Aloraichium-Z", $00
 	zmove "Snorlium-Z", $00
 	zmove "Eevium-Z", $00
 	zmove "Mewium-Z", $00
 	zmove "Marshadium-Z", $00
 	zunkn "2-1-0-1-2-1", $00
 	zunkn "0-1-0-1-2-1", $00
-	zmove "PikashuniumZ", $00
+	zmove "Pikashunium-Z", $00
 	zunkn "0-3-2-3-0-1", $00
 	zunkn "2-1-2-3-0-1", $00
 	zunkn "0-1-2-3-0-1", $00
@@ -560,6 +702,10 @@ table:
 	zunkn "Pikachu 5", $00
 	zunkn "2-1-0-1-0-1", $00
 	zunkn "0-1-0-1-0-1", $00
+no_preset:
+	fixstr "Custom", $12
+	fixstr "(No Preset)", $11
+	db $10
 
 patterns:
 	db K, 2F, 3F, 2F, 3F, 2F, 3F, 0
