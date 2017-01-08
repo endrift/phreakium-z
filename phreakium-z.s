@@ -649,7 +649,7 @@ table:
 	zpower "Groundium-Z"
 	zpower "Flyium-Z"
 	zpower "Psycium-Z"
-	zpower "Bugium-Z"
+	zpower "Buginium-Z"
 	zpower "Rockium-Z"
 	zpower "Ghostium-Z"
 	zpower "Dragonium-Z"
